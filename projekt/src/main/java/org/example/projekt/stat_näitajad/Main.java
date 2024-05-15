@@ -64,6 +64,35 @@ public class Main {
         }
     }
 
+    public static String selgitaKõik(HashMap<String, statistilineNäitaja> väärtused) {
+        String tulem = "";
+
+        for (Map.Entry<String, statistilineNäitaja> el: väärtused.entrySet()) {
+            tulem += el.getValue().selgita() + System.lineSeparator();
+        }
+        return tulem;
+
+    }
+
+    public static HashMap<String, statistilineNäitaja> teeMap(double[] arvudeMassiiv) {
+        HashMap<String, statistilineNäitaja> väärtused = new HashMap<String, statistilineNäitaja>();
+
+        väärtused.put("max", new max(arvudeMassiiv));
+        väärtused.put("min", new min(arvudeMassiiv));
+        väärtused.put("rng", new vahemik(arvudeMassiiv));
+        väärtused.put("avg", new keskmine(arvudeMassiiv));
+        väärtused.put("sum", new summa(arvudeMassiiv));
+        väärtused.put("len", new kogus(arvudeMassiiv));
+        väärtused.put("kurt", new kurtosis(arvudeMassiiv));
+        väärtused.put("med", new mediaan(arvudeMassiiv));
+        väärtused.put("asüm", new asümmeetrijakordaja(arvudeMassiiv));
+        väärtused.put("se", new standardviga(arvudeMassiiv));
+        väärtused.put("md", new mood(arvudeMassiiv));
+        väärtused.put("h", new hälve(arvudeMassiiv));
+        väärtused.put("sd", new standardhälve(arvudeMassiiv));
+
+        return väärtused;
+    }
 
     public static void main(String[] args) throws FileNotFoundException {
 
