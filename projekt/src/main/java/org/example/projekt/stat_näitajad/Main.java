@@ -9,9 +9,10 @@ import java.util.*;
 
 public class Main {
 
-    public static List<Double> failistLugemine(String failitee) {
+    public static double[] failistLugemine(String failitee) throws FileNotFoundException {
 
         List<Double> arvud = new ArrayList<>(); // List kuhu arvud loetakse failist
+        double[] massiivina;
 
         try {
             File fail = new File(failitee);
@@ -30,9 +31,16 @@ public class Main {
             }
             failiScanner.close();
         } catch (FileNotFoundException e) {
-            System.out.println("Ei leia faili");
+            throw new FileNotFoundException("Ei leia faili");
         }
-        return arvud;
+
+        massiivina = new double[arvud.size()];
+
+        for (int i = 0; i < arvud.size(); i++) {
+            massiivina[i] = arvud.get(i);
+        }
+
+        return massiivina;
     }
 
     public static void kirjutaFaili(HashMap<String, statistilineNäitaja> väärtused, String path) {
@@ -57,7 +65,7 @@ public class Main {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
 
         // tekst, mis kuvatakse ekraanile programmi käivitamisel
         System.out.println("//////");
@@ -72,7 +80,7 @@ public class Main {
         java.util.Scanner scanner = new java.util.Scanner(System.in);
         String failitee = scanner.nextLine();
 
-        List<Double> arvud = failistLugemine(failitee);
+        double[] arvudeMassiiv = failistLugemine(failitee);
 
         String tekst = "Võimalikud tegevused on:\nTeosta kogu analüüs - all\nMaksimum - max \nMiinimum - min\n" +
                 "Vahemik - rng\nKeskmine - avg \nSumma - sum \nKogus - len \nEkstsess (näitab andmete püstakust) - kurt \n" +
@@ -82,12 +90,7 @@ public class Main {
         System.out.println(tekst);
 
         // Arvutame failist saadud arvudega
-        if (!arvud.isEmpty()) {
-            // Muudab listi massiiviks
-            double[] arvudeMassiiv = new double[arvud.size()];
-            for (int i = 0; i < arvud.size(); i++) {
-                arvudeMassiiv[i] = arvud.get(i);
-            }
+        if (!(arvudeMassiiv == null)) {
 
             HashMap<String, statistilineNäitaja> väärtused = new HashMap<String, statistilineNäitaja>();
 
