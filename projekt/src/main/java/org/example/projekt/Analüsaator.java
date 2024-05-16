@@ -123,61 +123,59 @@ public class Analüsaator extends Application {
 
     // Meetod histogrammi loomiseks
     private void looHistogramm(Stage peaLava, Scene praeguneStseen, String fail) {
-        // Initialize decade counters
+        // Loome veerud
         int[] kümnendid = new int[11];
 
-        // Read years from file and count decades
+        //Loeb aastaid failist ning loeb kümnenditesse
         try (BufferedReader reader = new BufferedReader(new FileReader(fail))) {
             String rida;
             while ((rida = reader.readLine()) != null) {
-                // Extract the year from the line
+                
                 int year = Integer.parseInt(rida.trim());
 
-                // Determine the decade
+                // Leiab kümnendi
                 int decade = (year / 10) * 10;
 
-                // Increment the count for the corresponding decade
+                // Suurendab vastava kümnendi loendust
                 int kümnendiIndeks = (decade - 1900) / 10;
                 if (kümnendiIndeks >= 0 && kümnendiIndeks < kümnendid.length) {
                     kümnendid[kümnendiIndeks]++;
                 } else {
-                    // Handle the case where the decade is outside the expected range
-                    // For example, you can ignore or log these cases
+                    // saab midagi siia panna
                 }
             }
         } catch (IOException | NumberFormatException e) {
             e.printStackTrace();
-            return; // Exit method if there's an error
+            return;
         }
 
-        // Create histogram chart
+        // Loob histogrammi
         CategoryAxis xAxis = new CategoryAxis();
         NumberAxis yAxis = new NumberAxis();
         BarChart<String, Number> histogramm = new BarChart<>(xAxis, yAxis);
         xAxis.setLabel("Kümnend");
         yAxis.setLabel("Sagedus");
 
-        // Add data to the histogram chart
+        // Lisab andmed histogrammi
         XYChart.Series<String, Number> andmeSeeria = new XYChart.Series<>();
         for (int i = 0; i < kümnendid.length; i++) {
-            // Determine the decade label
+            
             String silt = String.format("%ds", 1900 + i * 10);
 
-            // Add the decade count to the series
             andmeSeeria.getData().add(new XYChart.Data<>(silt, kümnendid[i]));
         }
         histogramm.getData().add(andmeSeeria);
 
-        // Save the current scene
+        // Preagune stseen
         Scene eelmineStseen = praeguneStseen;
 
-        // Add a back button and the histogram to a new scene
+        // Tagasinupp
         VBox vbox = new VBox();
         Button tagasiNupp = new Button("Tagasi");
         tagasiNupp.setOnAction(event -> peaLava.setScene(eelmineStseen));
         vbox.getChildren().addAll(histogramm, tagasiNupp);
 
-        // Show the new scene
+        // Uus stseen
         peaLava.setScene(new Scene(vbox));
     }
 
