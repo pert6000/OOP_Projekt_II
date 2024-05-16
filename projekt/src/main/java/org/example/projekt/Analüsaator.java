@@ -1,33 +1,27 @@
 package org.example.projekt;
 
 import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import org.example.projekt.stat_näitajad.*;
+import org.example.projekt.stat_näitajad.statistilineNäitaja;
 
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import static org.example.projekt.stat_näitajad.Main.*;
 
@@ -42,9 +36,9 @@ public class Analüsaator extends Application {
         Group juurMenüü = new Group();
         Group juurNäitajad = new Group();
 
-        Scene stseenStart = new Scene(juurStart, 500, 500);
-        Scene stseenMenüü = new Scene(juurMenüü, 500, 500);
-        Scene stseenNäitajad = new Scene(juurNäitajad, 500, 500);
+        Scene stseenStart = new Scene(juurStart, 700, 500);
+        Scene stseenMenüü = new Scene(juurMenüü, 700, 500);
+        Scene stseenNäitajad = new Scene(juurNäitajad, 700, 500);
 
         VBox vboxStart = new VBox();
 
@@ -57,9 +51,17 @@ public class Analüsaator extends Application {
         title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         Text kirjeldus = new Text("Siin programmis saad andmeid analüüsida.");
         Button b1 = new Button("Analüüsima!");
+        CheckBox päisega = new CheckBox("Andmetel on päised");
         TextField path = new TextField();
+
+        HBox eraldajaKast = new HBox();
+        eraldajaKast.setSpacing(10);
+
+        Text eraldajaTekst = new Text("Andmete eraldaja:");
+        TextField eraldaja = new TextField();
         path.setMaxWidth(200);
         path.setPromptText("andmefaili asukoht");
+        eraldaja.setMaxSize(30,30);
 
         //vbox nuppude jaoks
         VBox vboxMenüü = new VBox();
@@ -85,16 +87,15 @@ public class Analüsaator extends Application {
         b1.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 fail = path.getText();
-                double[] arvud = new double[0];
+                HashMap<String, ArrayList<Double>> arvud = new HashMap<>();
 
                 try {
-                    arvud = Main.failistLugemine(fail);
-                    väärtused = teeMap(arvud);
+                    arvud = failistLugemine(fail, päisega.isSelected(), eraldaja.getText());
                     peaLava.setScene(stseenMenüü);
-                    vboxMenüü.setLayoutX(250 - vboxMenüü.getWidth() / 2);
-                } catch (FileNotFoundException e) {
+                    vboxMenüü.setLayoutX(350 - vboxMenüü.getWidth() / 2);
+                } catch (IOException e) {
                     path.clear();
-                    path.setPromptText("Faili ei leitud!");
+                    path.setPromptText(e.getMessage());
                     juurStart.requestFocus();
                 }
             }
@@ -112,7 +113,7 @@ public class Analüsaator extends Application {
             public void handle(ActionEvent event) {
                 peaLava.setScene(stseenNäitajad);
                 näitajad.setText(selgitaKõik(väärtused));
-                vboxNäitajad.setLayoutX(250 - vboxNäitajad.getWidth() / 2);
+                vboxNäitajad.setLayoutX(350 - vboxNäitajad.getWidth() / 2);
             }
         });
 
@@ -127,6 +128,12 @@ public class Analüsaator extends Application {
 
         stseenNäitajad.widthProperty().addListener((observable, oldValue, newValue) -> {
             vboxNäitajad.setLayoutX((newValue.doubleValue() - vboxNäitajad.getWidth()) / 2);
+        });
+
+        eraldaja.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.length() > 1) {
+                eraldaja.setText(oldValue);
+            }
         });
 
         //tekitame nupu, millega saab edasi tagasi liikuda
@@ -144,7 +151,8 @@ public class Analüsaator extends Application {
         juurMenüü.getChildren().add(tagasiStart);
         juurNäitajad.getChildren().add(tagasiMenüüsse);
 
-        vboxStart.getChildren().addAll(title, kirjeldus, path, b1);
+        eraldajaKast.getChildren().addAll(eraldajaTekst, eraldaja);
+        vboxStart.getChildren().addAll(title, kirjeldus, path,eraldajaKast, päisega, b1);
         vboxMenüü.getChildren().addAll(näitajadNupp, histoNupp, scatNupp);
         vboxNäitajad.getChildren().addAll(näitajad, kirjutaNäitajadFaili);
 
