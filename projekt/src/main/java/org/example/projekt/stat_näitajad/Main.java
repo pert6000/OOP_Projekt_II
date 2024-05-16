@@ -28,7 +28,6 @@ public class Main {
         päis = br.readLine().split(eraldaja);
         tulpasid = päis.length;
 
-
         if (päistega) {
 
             for (int i = 0; i < tulpasid; i++) {
@@ -48,8 +47,9 @@ public class Main {
             jupid = rida.split(eraldaja);
 
             for (int i = 0; i < tulpasid; i++) {
-                andmed.get(päis[i]).add(Double.parseDouble(päis[i]));
+                andmed.get(päis[i]).add(Double.parseDouble(jupid[i]));
             }
+            rida = br.readLine();
         }
 
         br.close();
@@ -109,7 +109,15 @@ public class Main {
         return väärtused;
     }
 
-    public static void main(String[] args) {
-        System.out.println(Arrays.toString("12345".split("")));
+    public static void main(String[] args) throws IOException {
+        HashMap<String, ArrayList<Double>> data = failistLugemine("data.txt", true, ";");
+        System.out.println(data.keySet());
+
+        for (int i = 0; i < 5; i++) {
+            for (String s: data.keySet()) {
+                System.out.println(data.get(s).get(i));
+            }
+        }
+
     }
 }

@@ -1,48 +1,33 @@
 package org.example.projekt;
 
 import javafx.application.Application;
-
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.layout.HBox;
-
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
-
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-
 import org.example.projekt.stat_näitajad.statistilineNäitaja;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import org.example.projekt.stat_näitajad.Main;
-
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.example.projekt.stat_näitajad.Main.*;
 
@@ -111,7 +96,8 @@ public class Analüsaator extends Application {
 
                 try {
                     arvud = failistLugemine(fail, päisega.isSelected(), eraldaja.getText());
-                    looHistogramm(peaLava, stseenStart, fail);
+                    System.out.println(arvud.keySet());
+                    //looHistogramm(peaLava, stseenStart, fail);
                     peaLava.setScene(stseenMenüü);
                     vboxMenüü.setLayoutX(350 - vboxMenüü.getWidth() / 2);
                 } catch (IOException e) {
@@ -119,15 +105,14 @@ public class Analüsaator extends Application {
                     path.setPromptText(e.getMessage());
                     juurStart.requestFocus();
                 }
-
+            }});
         // Kutsume välja meetodi histogrammi loomiseks
         histoNupp.setOnAction(event -> {
             String fail = path.getText();
             looHistogramm(peaLava, stseenStart, fail);
         });
 
-            }
-        });
+
 
         // Juhul kui vajutatakse Enter klahvi, siis käivitatakse "Analüüsima!" nupp
         stseenStart.setOnKeyPressed(event -> {
@@ -144,13 +129,6 @@ public class Analüsaator extends Application {
                 vboxNäitajad.setLayoutX(350 - vboxNäitajad.getWidth() / 2);
             }
         });
-
-        // Lisame elemendid VBoxidesse
-        vboxStart.getChildren().addAll(title, kirjeldus, path, b1);
-        vboxMenüü.getChildren().addAll(näitajadNupp, histoNupp, scatNupp);
-        juurStart.getChildren().add(vboxStart);
-        juurMenüü.getChildren().add(vboxMenüü);
-        juurStart.requestFocus();
 
 
         // Stseenide suuruste muutmisel liigutatakse VBoxid ekraani keskele
@@ -277,12 +255,11 @@ public class Analüsaator extends Application {
             histogramm.getData().add(andmeSeeria);
 
             // Salvestab praeguse stseeni
-            Scene eelmineStseen = praeguneStseen;
 
             // Lisab tagasivajumisnupu ja histogrammi uude stseeni
             VBox vbox = new VBox();
             Button tagasiNupp = new Button("Tagasi");
-            tagasiNupp.setOnAction(event -> peaLava.setScene(eelmineStseen));
+            tagasiNupp.setOnAction(event -> peaLava.setScene(praeguneStseen));
             vbox.getChildren().addAll(histogramm, tagasiNupp);
 
             // Näitab uut stseeni
