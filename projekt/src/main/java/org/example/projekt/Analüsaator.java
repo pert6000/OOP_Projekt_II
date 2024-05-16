@@ -11,6 +11,7 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -23,6 +24,9 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 public class Analüsaator extends Application {
 
@@ -123,63 +127,84 @@ public class Analüsaator extends Application {
 
     // Meetod histogrammi loomiseks
     private void looHistogramm(Stage peaLava, Scene praeguneStseen, String fail) {
-        // Loome veerud
-        int[] kümnendid = new int[11];
+        // Algab kümnendite loendurite initsialiseerimisega
+        int väikseimArv = Integer.MAX_VALUE;
+        int suurimArv = Integer.MIN_VALUE;
+        Map<Integer, Integer> LoenduridKaart = new TreeMap<>();
 
-        //Loeb aastaid failist ning loeb kümnenditesse
-        try (BufferedReader reader = new BufferedReader(new FileReader(fail))) {
+        // Loeb aastad failist ja loeb vahemikke
+        try (BufferedReader lugeja = new BufferedReader(new FileReader(fail))) {
             String rida;
-            while ((rida = reader.readLine()) != null) {
-                
-                int year = Integer.parseInt(rida.trim());
+            while ((rida = lugeja.readLine()) != null) {
+                // Võtab ridadelt arv
+                int arv = Integer.parseInt(rida.trim());
 
-                // Leiab kümnendi
-                int decade = (year / 10) * 10;
+                // Uuendab väikseimat ja suurimat aastat
+                väikseimArv = Math.min(väikseimArv, arv);
+                suurimArv = Math.max(suurimArv, arv);
 
-                // Suurendab vastava kümnendi loendust
-                int kümnendiIndeks = (decade - 1900) / 10;
-                if (kümnendiIndeks >= 0 && kümnendiIndeks < kümnendid.length) {
-                    kümnendid[kümnendiIndeks]++;
-                } else {
-                    // saab midagi siia panna
-                }
+                // Suurendab vastava vahemiku loenduri väärtust
+                LoenduridKaart.put(arv, LoenduridKaart.getOrDefault(arv, 0) + 1);
             }
         } catch (IOException | NumberFormatException e) {
             e.printStackTrace();
-            return;
+            return; // Väljub meetodist, kui tekib viga
         }
 
-        // Loob histogrammi
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis();
-        BarChart<String, Number> histogramm = new BarChart<>(xAxis, yAxis);
-        xAxis.setLabel("Kümnend");
-        yAxis.setLabel("Sagedus");
+        // Küsib kasutajalt veergude arvu
+        TextInputDialog dialoog = new TextInputDialog("10");
+        dialoog.setTitle("Histogrammi Veerud");
+        dialoog.setHeaderText("Sisesta histogrammi jaoks veergude arv:");
+        dialoog.setContentText("Veerude arv:");
 
-        // Lisab andmed histogrammi
-        XYChart.Series<String, Number> andmeSeeria = new XYChart.Series<>();
-        for (int i = 0; i < kümnendid.length; i++) {
-            
-            String silt = String.format("%ds", 1900 + i * 10);
+        Optional<String> tulemus = dialoog.showAndWait();
+        if (tulemus.isPresent()) {
+            int veergudeArv = Integer.parseInt(tulemus.get());
 
-            andmeSeeria.getData().add(new XYChart.Data<>(silt, kümnendid[i]));
+            // Arvutab iga veeru laiuse
+            int veeruLaius = (suurimArv - väikseimArv + 1) / veergudeArv;
+
+            // Loob histogrammi diagrammi
+            CategoryAxis xTelg = new CategoryAxis();
+            NumberAxis yTelg = new NumberAxis();
+            BarChart<String, Number> histogramm = new BarChart<>(xTelg, yTelg);
+            xTelg.setLabel("Vahemik");
+            yTelg.setLabel("Sagedus");
+
+            // Lisab andmed histogrammi diagrammile
+            XYChart.Series<String, Number> andmeSeeria = new XYChart.Series<>();
+            for (int i = 0; i < veergudeArv; i++) {
+                // Määrab veeru algus- ja lõpu aasta
+                int algusArv = väikseimArv + i * veeruLaius;
+                int lõpuArv = algusArv + veeruLaius - 1;
+
+                // Määrab veeru märgise
+                String kümnendiMärgis = String.format("%ds-%ds", algusArv, lõpuArv);
+
+                // Arvutab veeru kogusagedus
+                int koguSagedus = 0;
+                for (int aasta = algusArv; aasta <= lõpuArv; aasta++) {
+                    koguSagedus += LoenduridKaart.getOrDefault((aasta / 10) * 10, 0);
+                }
+
+                // Lisab veeru seeriasse
+                andmeSeeria.getData().add(new XYChart.Data<>(kümnendiMärgis, koguSagedus));
+            }
+            histogramm.getData().add(andmeSeeria);
+
+            // Salvestab praeguse stseeni
+            Scene eelmineStseen = praeguneStseen;
+
+            // Lisab tagasivajumisnupu ja histogrammi uude stseeni
+            VBox vbox = new VBox();
+            Button tagasiNupp = new Button("Tagasi");
+            tagasiNupp.setOnAction(event -> peaLava.setScene(eelmineStseen));
+            vbox.getChildren().addAll(histogramm, tagasiNupp);
+
+            // Näitab uut stseeni
+            peaLava.setScene(new Scene(vbox));
         }
-        histogramm.getData().add(andmeSeeria);
-
-        // Preagune stseen
-        Scene eelmineStseen = praeguneStseen;
-
-        // Tagasinupp
-        VBox vbox = new VBox();
-        Button tagasiNupp = new Button("Tagasi");
-        tagasiNupp.setOnAction(event -> peaLava.setScene(eelmineStseen));
-        vbox.getChildren().addAll(histogramm, tagasiNupp);
-
-        // Uus stseen
-        peaLava.setScene(new Scene(vbox));
     }
-
-
     public static void main(String[] args) {
         launch();
     }
