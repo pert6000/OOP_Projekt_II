@@ -7,10 +7,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
+import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
@@ -178,6 +175,30 @@ public class Analüsaator extends Application {
                     vboxNäitajad.setLayoutX(100);
                 }
             }});
+        scatNupp.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                tulbad[0] = analüüsitavadTulbad.getText();
+                String[] soovitudTulbad = tulbad[0].split(",");
+                if (soovitudTulbad.length != 2) {
+                    analüüsitavadTulbad.setText("");
+                    analüüsitavadTulbad.setPromptText("Tulpasid peab olema kaks.");
+                } else {
+                    String esimene;
+                    String teine;
+                    if (päisega.isSelected()) {
+                        esimene = soovitudTulbad[0];
+                        teine = soovitudTulbad[1];
+                    } else {
+                        esimene = soovitudTulbad[0] + ". tulp";
+                        teine = soovitudTulbad[1] + ". tulp";
+                    }
+
+                    looScatter(peaLava, stseenMenüü,arvud[0], esimene,teine);
+                }
+
+            }
+        });
 
         //tekitame nupu, millega saab edasi tagasi liikuda
         Button tagasiStart = new Button("Tagasi");
@@ -215,6 +236,35 @@ public class Analüsaator extends Application {
 
     }
 
+    private void looScatter(Stage peaLava, Scene praeguneStseen, HashMap<String, ArrayList<Double>> arvud, String esimene, String teine) {
+
+        ArrayList<Double> esimeneArvud = arvud.get(esimene);
+        ArrayList<Double> teineArvud = arvud.get(teine);
+
+        NumberAxis xAxis = new NumberAxis(Collections.min(esimeneArvud), Collections.max(esimeneArvud), 3);
+        xAxis.setLabel(esimene);
+
+        NumberAxis yAxis = new NumberAxis(Collections.min(teineArvud), Collections.max(teineArvud), 3);
+        yAxis.setLabel(teine);
+
+        ScatterChart<String, Number> scatter = new ScatterChart(xAxis, yAxis);
+
+        XYChart.Series series = new XYChart.Series();
+
+        for (int i = 0; i < esimeneArvud.size(); i++) {
+            series.getData().add(new XYChart.Data(esimeneArvud.get(i), teineArvud.get(i)));
+        }
+
+        scatter.getData().addAll(series);
+
+        VBox vbox = new VBox();
+        Button tagasiNupp = new Button("Tagasi");
+        tagasiNupp.setOnAction(event -> peaLava.setScene(praeguneStseen));
+        vbox.getChildren().addAll(scatter, tagasiNupp);
+
+        peaLava.setScene(new Scene(vbox));
+
+    }
     // Meetod histogrammi loomiseks
     private void looHistogramm(Stage peaLava, Scene praeguneStseen, HashMap<String, ArrayList<Double>> arvud,String tulbad) {
 

@@ -101,6 +101,15 @@ public class Main {
         }
         return tulem;
     }
+    
+    public static int loeSümboleid(String s, String sümbol) {
+        int count = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (String.valueOf(s.charAt(i)).equals(sümbol))
+                count ++;
+        }
+        return count;
+    }
 
     public static HashMap<String, statistilineNäitaja> teeMap(double[] arvudeMassiiv) {
         HashMap<String, statistilineNäitaja> väärtused = new HashMap<String, statistilineNäitaja>();
