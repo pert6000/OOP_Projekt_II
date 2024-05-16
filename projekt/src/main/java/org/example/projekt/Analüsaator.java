@@ -1,48 +1,28 @@
 package org.example.projekt;
 
 import javafx.application.Application;
-
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-
+import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
-
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextInputDialog;
-
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-
 import org.example.projekt.stat_näitajad.statistilineNäitaja;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import org.example.projekt.stat_näitajad.Main;
-
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.example.projekt.stat_näitajad.Main.*;
 
@@ -53,14 +33,18 @@ public class Analüsaator extends Application {
 
     @Override
     public void start(Stage peaLava) {
+
+        //loome juured
         Group juurStart = new Group();
         Group juurMenüü = new Group();
         Group juurNäitajad = new Group();
 
+        //loome stseenid
         Scene stseenStart = new Scene(juurStart, 700, 500);
         Scene stseenMenüü = new Scene(juurMenüü, 700, 500);
         Scene stseenNäitajad = new Scene(juurNäitajad, 700, 500);
 
+        //loome vboxid
         VBox vboxStart = new VBox();
         vboxStart.setPadding(new Insets(10));
         vboxStart.setSpacing(14);
@@ -69,19 +53,25 @@ public class Analüsaator extends Application {
         // VBox stardimenüü jaoks
         Text title = new Text("Tere tulemast!");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        Text kirjeldus = new Text("Siin programmis saad andmeid analüüsida.");
+        Text kirjeldus = new Text("Siin programmis saad andmeid analüüsida." + System.lineSeparator()+
+                "Sisesta kasti andmefaili asukoht. Kui andmetes" + System.lineSeparator() +
+                "on vaid üks tulp, siis jätta eraldaja lahter tühjaks.");
         Button b1 = new Button("Analüüsima!");
         CheckBox päisega = new CheckBox("Andmetel on päised");
         TextField path = new TextField();
+        Text abimenüü = new Text("Kirjuta siia tulpade päised, mille andmeid " +
+                "analüüsida." + System.lineSeparator() + "Juhul, kui päiseid pole, siis kasuta tulba numbrit. "+ System.lineSeparator() +"" +
+                "Mitme tulba puhul erala tulbad koma abil.");
 
         HBox eraldajaKast = new HBox();
         eraldajaKast.setSpacing(10);
 
         Text eraldajaTekst = new Text("Andmete eraldaja:");
         TextField eraldaja = new TextField();
+        Text kirjutatud = new Text("Andemed kirjutatud faili!");
         path.setMaxWidth(200);
         path.setPromptText("andmefaili asukoht");
-        eraldaja.setMaxSize(30,30);
+        eraldaja.setMaxSize(30, 30);
 
         // VBox nuppude jaoks
         VBox vboxMenüü = new VBox();
@@ -89,43 +79,55 @@ public class Analüsaator extends Application {
         vboxMenüü.setSpacing(25);
         vboxMenüü.setAlignment(Pos.CENTER);
 
+        TextField analüüsitavadTulbad = new TextField();
+        analüüsitavadTulbad.setPromptText("Analüüsitavad tulbad");
         Button näitajadNupp = new Button("Statitiliste näitajate arvutus");
         Button histoNupp = new Button("Histogramm");
         Button scatNupp = new Button("Scatter");
 
         VBox vboxNäitajad = new VBox();
         vboxNäitajad.setPadding(new Insets(30, 0, 0, 0));
-        vboxNäitajad.setSpacing(14);
+
         vboxNäitajad.setAlignment(Pos.CENTER);
 
         Button kirjutaNäitajadFaili = new Button("Kirjuta faili");
-        kirjutaNäitajadFaili.setOnAction(event -> kirjutaFaili(väärtused,fail));
+
 
         Text näitajad = new Text();
+
+        final String[] tulbad = new String[1];
+        final HashMap<String, ArrayList<Double>>[] arvud = new HashMap[]{new HashMap<>()};
 
         //nupuvajutuse handler stardimenüüs
         b1.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 fail = path.getText();
-                HashMap<String, ArrayList<Double>> arvud = new HashMap<>();
 
                 try {
-                    arvud = failistLugemine(fail, päisega.isSelected(), eraldaja.getText());
-                    looHistogramm(peaLava, stseenStart, fail);
+                    arvud[0] = failistLugemine(fail, päisega.isSelected(), eraldaja.getText());
+                    System.out.println(arvud[0].keySet());
                     peaLava.setScene(stseenMenüü);
                     vboxMenüü.setLayoutX(350 - vboxMenüü.getWidth() / 2);
-                } catch (IOException e) {
+                } catch (RuntimeException | IOException e) {
                     path.clear();
                     path.setPromptText(e.getMessage());
                     juurStart.requestFocus();
                 }
-
+            }
+        });
         // Kutsume välja meetodi histogrammi loomiseks
         histoNupp.setOnAction(event -> {
-            String fail = path.getText();
-            looHistogramm(peaLava, stseenStart, fail);
-        });
-
+            tulbad[0] = analüüsitavadTulbad.getText();
+            if (tulbad[0].contains(",")) {
+                analüüsitavadTulbad.setText("");
+                analüüsitavadTulbad.setPromptText("Ei saa teha mitme tulbaga.");
+            } else {
+                if (päisega.isSelected())
+                    looHistogramm(peaLava, stseenStart, arvud[0], tulbad[0]);
+                else {
+                    String tulp = tulbad[0] + ". tulp";
+                    looHistogramm(peaLava, stseenStart, arvud[0], tulp);
+                }
             }
         });
 
@@ -135,23 +137,6 @@ public class Analüsaator extends Application {
                 b1.fire();
             }
         });
-
-
-        näitajadNupp.setOnAction(new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                peaLava.setScene(stseenNäitajad);
-                näitajad.setText(selgitaKõik(väärtused));
-                vboxNäitajad.setLayoutX(350 - vboxNäitajad.getWidth() / 2);
-            }
-        });
-
-        // Lisame elemendid VBoxidesse
-        vboxStart.getChildren().addAll(title, kirjeldus, path, b1);
-        vboxMenüü.getChildren().addAll(näitajadNupp, histoNupp, scatNupp);
-        juurStart.getChildren().add(vboxStart);
-        juurMenüü.getChildren().add(vboxMenüü);
-        juurStart.requestFocus();
-
 
         // Stseenide suuruste muutmisel liigutatakse VBoxid ekraani keskele
         stseenStart.widthProperty().addListener((observable, oldValue, newValue) -> {
@@ -173,7 +158,67 @@ public class Analüsaator extends Application {
             }
         });
 
-        //tekitame nupu, millega saab edasi tagasi liikuda
+        kirjutaNäitajadFaili.setOnAction(event -> {
+            kirjutaFaili(väärtused, fail);
+            vboxNäitajad.getChildren().add(kirjutatud);
+        });
+
+        //anname funktsiooni nupule, millega luuakse leht, kus stat_näitajaid
+        näitajadNupp.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                String tulp;
+                tulbad[0] = analüüsitavadTulbad.getText(); //millist tulpa soovib kasutaja analüüsida
+                if (tulbad[0].contains(",")) { //kas kasutaja on sisestanud mitu tulpa?
+                    analüüsitavadTulbad.setText("");
+                    analüüsitavadTulbad.setPromptText("Ei saa teha mitme tulbaga.");
+
+                } else if (tulbad[0].isEmpty()) { //kas kasutaja on välja tühjaks jätnud?
+                    analüüsitavadTulbad.setPromptText("Peab valima tulba");
+
+                } else {
+                    if (päisega.isSelected()) { //kas andmed on päistega
+                        tulp = tulbad[0];
+
+                    } else {
+                        tulp = tulbad[0] + ". tulp";
+                    }
+
+                    väärtused = teeMap(ujukomaMassiiviks(arvud[0].get(tulp)));
+                    peaLava.setScene(stseenNäitajad);
+                    näitajad.setText(selgitaKõik(väärtused));
+                    vboxNäitajad.setLayoutX(100);
+                }
+            }
+        });
+
+        //nupp, mille tagajärjel luuakse scatterchart
+        scatNupp.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                tulbad[0] = analüüsitavadTulbad.getText();
+                String[] soovitudTulbad = tulbad[0].split(",");
+                if (soovitudTulbad.length != 2) { //kas on õige kogus soovitud tulpasid
+                    analüüsitavadTulbad.setText("");
+                    analüüsitavadTulbad.setPromptText("Tulpasid peab olema kaks.");
+                } else {
+                    String esimene;
+                    String teine;
+                    if (päisega.isSelected()) { //kas andmed on päistega
+                        esimene = soovitudTulbad[0];
+                        teine = soovitudTulbad[1];
+                    } else { //kui ei ole päistega
+                        esimene = soovitudTulbad[0] + ". tulp";
+                        teine = soovitudTulbad[1] + ". tulp";
+                    }
+
+                    //loome graafiku
+                    looScatter(peaLava, stseenMenüü, arvud[0], esimene, teine);
+                }
+
+            }
+        });
+
+        //tekitame nupud, millega saab edasi tagasi liikuda
         Button tagasiStart = new Button("Tagasi");
         tagasiStart.setLayoutY(15);
         tagasiStart.setLayoutX(15);
@@ -184,13 +229,13 @@ public class Analüsaator extends Application {
         tagasiMenüüsse.setLayoutX(15);
         tagasiMenüüsse.setOnAction(event -> peaLava.setScene(stseenMenüü));
 
-
+        //paigutame objektid nii, et tekiks soovitud struktuur otspunktide ja juurte vahel
         juurMenüü.getChildren().add(tagasiStart);
         juurNäitajad.getChildren().add(tagasiMenüüsse);
 
         eraldajaKast.getChildren().addAll(eraldajaTekst, eraldaja);
-        vboxStart.getChildren().addAll(title, kirjeldus, path,eraldajaKast, päisega, b1);
-        vboxMenüü.getChildren().addAll(näitajadNupp, histoNupp, scatNupp);
+        vboxStart.getChildren().addAll(title, kirjeldus, path, eraldajaKast, päisega, b1);
+        vboxMenüü.getChildren().addAll(abimenüü,analüüsitavadTulbad, näitajadNupp, histoNupp, scatNupp);
         vboxNäitajad.getChildren().addAll(näitajad, kirjutaNäitajadFaili);
 
         juurStart.getChildren().add(vboxStart);
@@ -199,7 +244,7 @@ public class Analüsaator extends Application {
 
         juurStart.requestFocus();
 
-        peaLava.setTitle("Valge ruut");
+        peaLava.setTitle("Analüsaator");
         peaLava.setScene(stseenStart);
         peaLava.show();
         peaLava.setMinWidth(250);
@@ -209,30 +254,67 @@ public class Analüsaator extends Application {
 
     }
 
+    private void looScatter(Stage peaLava, Scene praeguneStseen, HashMap<String, ArrayList<Double>> arvud, String esimene, String teine) {
+        //meetod, millega luuakse scatter chart etteantud andmestiku põhjal
+
+        //eraldatakse mõlema dataseti andmed
+        ArrayList<Double> esimeneArvud = arvud.get(esimene);
+        ArrayList<Double> teineArvud = arvud.get(teine);
+
+        //algatame teljed
+        NumberAxis xAxis = new NumberAxis(Collections.min(esimeneArvud), Collections.max(esimeneArvud), 3);
+        xAxis.setLabel(esimene);
+
+        NumberAxis yAxis = new NumberAxis(Collections.min(teineArvud), Collections.max(teineArvud), 3);
+        yAxis.setLabel(teine);
+
+        ScatterChart<Double, Double> scatter = new ScatterChart(xAxis, yAxis);
+
+        XYChart.Series series = new XYChart.Series();
+
+        //lisame ettantud andmestiku scattercharti andmestikku
+        for (int i = 0; i < esimeneArvud.size(); i++) {
+            series.getData().add(new XYChart.Data(esimeneArvud.get(i), teineArvud.get(i)));
+        }
+
+        scatter.getData().addAll(series);
+
+        //kujundame scatteri selliseks nagu soovime
+        scatter.setLegendVisible(false);
+
+        VBox vbox = new VBox();
+        vbox.setSpacing(14);
+        Button tagasiNupp = new Button("Tagasi");
+        //CheckBox trendijoon = new CheckBox("Trendijoon");
+
+        tagasiNupp.setOnAction(event -> peaLava.setScene(praeguneStseen));
+        vbox.getChildren().addAll(scatter, tagasiNupp);
+
+        peaLava.setScene(new Scene(vbox));
+
+    }
+
     // Meetod histogrammi loomiseks
-    private void looHistogramm(Stage peaLava, Scene praeguneStseen, String fail) {
+    private void looHistogramm(Stage peaLava, Scene praeguneStseen, HashMap<String, ArrayList<Double>> arvud, String tulbad) {
+
+        ArrayList<Double> andmed = arvud.get(tulbad);
+
         // Algab kümnendite loendurite initsialiseerimisega
-        int väikseimArv = Integer.MAX_VALUE;
-        int suurimArv = Integer.MIN_VALUE;
-        Map<Integer, Integer> LoenduridKaart = new TreeMap<>();
+        double väikseimArv = Double.MAX_VALUE;
+        double suurimArv = Double.MIN_VALUE;
+        Map<Double, Double> LoenduridKaart = new TreeMap<>();
 
-        // Loeb aastad failist ja loeb vahemikke
-        try (BufferedReader lugeja = new BufferedReader(new FileReader(fail))) {
-            String rida;
-            while ((rida = lugeja.readLine()) != null) {
-                // Võtab ridadelt arv
-                int arv = Integer.parseInt(rida.trim());
+        for (Double d : andmed) {
+            // Uuendab väikseimat ja suurimat aastat
+            väikseimArv = Math.min(väikseimArv, d);
+            suurimArv = Math.max(suurimArv, d);
 
-                // Uuendab väikseimat ja suurimat aastat
-                väikseimArv = Math.min(väikseimArv, arv);
-                suurimArv = Math.max(suurimArv, arv);
-
-                // Suurendab vastava vahemiku loenduri väärtust
-                LoenduridKaart.put(arv, LoenduridKaart.getOrDefault(arv, 0) + 1);
-            }
-        } catch (IOException | NumberFormatException e) {
-            e.printStackTrace();
-            return; // Väljub meetodist, kui tekib viga
+            // Suurendab vastava vahemiku loenduri väärtust
+            LoenduridKaart.put(d, LoenduridKaart.getOrDefault(d, 0.0) + 1);
+        }
+        for (Map.Entry<Double, Double> entry : LoenduridKaart.entrySet()) {
+            System.out.print(entry.getKey());
+            System.out.println(": " + entry.getValue());
         }
 
         // Küsib kasutajalt veergude arvu
@@ -246,7 +328,7 @@ public class Analüsaator extends Application {
             int veergudeArv = Integer.parseInt(tulemus.get());
 
             // Arvutab iga veeru laiuse
-            int veeruLaius = (suurimArv - väikseimArv + 1) / veergudeArv;
+            double veeruLaius = (suurimArv - väikseimArv + 1) / veergudeArv;
 
             // Loob histogrammi diagrammi
             CategoryAxis xTelg = new CategoryAxis();
@@ -259,36 +341,39 @@ public class Analüsaator extends Application {
             XYChart.Series<String, Number> andmeSeeria = new XYChart.Series<>();
             for (int i = 0; i < veergudeArv; i++) {
                 // Määrab veeru algus- ja lõpu aasta
-                int algusArv = väikseimArv + i * veeruLaius;
-                int lõpuArv = algusArv + veeruLaius - 1;
+                double algusArv = väikseimArv + i * veeruLaius;
+                double lõpuArv = algusArv + veeruLaius - 1;
 
                 // Määrab veeru märgise
-                String kümnendiMärgis = String.format("%ds-%ds", algusArv, lõpuArv);
+                String kümnendiMärgis = String.format("%d-%d", Math.round(algusArv), Math.round(lõpuArv));
 
                 // Arvutab veeru kogusagedus
                 int koguSagedus = 0;
-                for (int aasta = algusArv; aasta <= lõpuArv; aasta++) {
-                    koguSagedus += LoenduridKaart.getOrDefault((aasta / 10) * 10, 0);
+                for (Double a : LoenduridKaart.keySet()) {
+                    if (a > algusArv && a <= lõpuArv)
+                        koguSagedus += LoenduridKaart.getOrDefault(a, 0.0);
                 }
-
+                System.out.println(koguSagedus);
                 // Lisab veeru seeriasse
                 andmeSeeria.getData().add(new XYChart.Data<>(kümnendiMärgis, koguSagedus));
             }
             histogramm.getData().add(andmeSeeria);
 
             // Salvestab praeguse stseeni
-            Scene eelmineStseen = praeguneStseen;
 
             // Lisab tagasivajumisnupu ja histogrammi uude stseeni
             VBox vbox = new VBox();
             Button tagasiNupp = new Button("Tagasi");
-            tagasiNupp.setOnAction(event -> peaLava.setScene(eelmineStseen));
+            vbox.setSpacing(14);
+            tagasiNupp.setOnAction(event -> peaLava.setScene(praeguneStseen));
+            histogramm.setLegendVisible(false);
             vbox.getChildren().addAll(histogramm, tagasiNupp);
 
             // Näitab uut stseeni
             peaLava.setScene(new Scene(vbox));
         }
     }
+
     public static void main(String[] args) {
         launch();
     }
