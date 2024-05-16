@@ -19,7 +19,7 @@ public class Main {
         try {
             br = new BufferedReader(new InputStreamReader(new FileInputStream(fail)));
         } catch (FileNotFoundException e) {
-            throw new IOException("Faili ei leitud");
+            throw new RuntimeException("Faili ei leitud");
         }
 
         if (eraldaja.isEmpty())
@@ -28,28 +28,32 @@ public class Main {
         päis = br.readLine().split(eraldaja);
         tulpasid = päis.length;
 
-        if (päistega) {
+        try {
+            if (päistega) {
 
-            for (int i = 0; i < tulpasid; i++) {
-                andmed.put(päis[i], new ArrayList<>());
+                for (int i = 0; i < tulpasid; i++) {
+                    andmed.put(päis[i], new ArrayList<>());
+                }
+            } else {
+                for (int i = 0; i < tulpasid; i++) {
+                    String uusPäis = (i + 1) + ". tulp";
+                    andmed.put(uusPäis, new ArrayList<>());
+                    andmed.get((i + 1) + ". tulp").add(Double.parseDouble(päis[i]));
+                    päis[i] = uusPäis;
+                }
             }
-        }else {
-            for (int i = 0; i < tulpasid; i++) {
-                String uusPäis = (i+1) + ". tulp";
-                andmed.put(uusPäis, new ArrayList<>());
-                andmed.get((i+1) + ". tulp").add(Double.parseDouble(päis[i]));
-                päis[i] = uusPäis;
-            }
-        }
 
-        rida = br.readLine();
-        while (rida != null) {
-            jupid = rida.split(eraldaja);
-
-            for (int i = 0; i < tulpasid; i++) {
-                andmed.get(päis[i]).add(Double.parseDouble(jupid[i]));
-            }
             rida = br.readLine();
+            while (rida != null) {
+                jupid = rida.split(eraldaja);
+
+                for (int i = 0; i < tulpasid; i++) {
+                    andmed.get(päis[i]).add(Double.parseDouble(jupid[i]));
+                }
+                rida = br.readLine();
+            }
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Viga andmetes");
         }
 
         br.close();
@@ -89,6 +93,15 @@ public class Main {
 
     }
 
+    public static double[] ujukomaMassiiviks(ArrayList<Double> arvud) {
+        double[] tulem = new double[arvud.size()];
+
+        for (int i = 0; i < arvud.size(); i++) {
+            tulem[i] = arvud.get(i);
+        }
+        return tulem;
+    }
+
     public static HashMap<String, statistilineNäitaja> teeMap(double[] arvudeMassiiv) {
         HashMap<String, statistilineNäitaja> väärtused = new HashMap<String, statistilineNäitaja>();
 
@@ -110,13 +123,14 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        HashMap<String, ArrayList<Double>> data = failistLugemine("data.txt", true, ";");
+        HashMap<String, ArrayList<Double>> data = failistLugemine("data_päistega.txt", true, ";");
         System.out.println(data.keySet());
 
         for (int i = 0; i < 5; i++) {
             for (String s: data.keySet()) {
-                System.out.println(data.get(s).get(i));
+                System.out.print(data.get(s).get(i) + " ");
             }
+            System.out.println();
         }
 
     }

@@ -24,8 +24,6 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.example.projekt.stat_näitajad.statistilineNäitaja;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
@@ -74,6 +72,8 @@ public class Analüsaator extends Application {
         vboxMenüü.setSpacing(25);
         vboxMenüü.setAlignment(Pos.CENTER);
 
+        TextField analüüsitavadTulbad = new TextField();
+        analüüsitavadTulbad.setPromptText("Analüüsitavad tulbad");
         Button näitajadNupp = new Button("Statitiliste näitajate arvutus");
         Button histoNupp = new Button("Histogramm");
         Button scatNupp = new Button("Scatter");
@@ -84,23 +84,24 @@ public class Analüsaator extends Application {
         vboxNäitajad.setAlignment(Pos.CENTER);
 
         Button kirjutaNäitajadFaili = new Button("Kirjuta faili");
-        kirjutaNäitajadFaili.setOnAction(event -> kirjutaFaili(väärtused,fail));
+
 
         Text näitajad = new Text();
+
+        final String[] tulbad = new String[1];
+        final HashMap<String, ArrayList<Double>>[] arvud = new HashMap[]{new HashMap<>()};
 
         //nupuvajutuse handler stardimenüüs
         b1.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 fail = path.getText();
-                HashMap<String, ArrayList<Double>> arvud = new HashMap<>();
 
                 try {
-                    arvud = failistLugemine(fail, päisega.isSelected(), eraldaja.getText());
-                    System.out.println(arvud.keySet());
-                    //looHistogramm(peaLava, stseenStart, fail);
+                    arvud[0] = failistLugemine(fail, päisega.isSelected(), eraldaja.getText());
+                    System.out.println(arvud[0].keySet());
                     peaLava.setScene(stseenMenüü);
                     vboxMenüü.setLayoutX(350 - vboxMenüü.getWidth() / 2);
-                } catch (IOException e) {
+                } catch (RuntimeException | IOException e) {
                     path.clear();
                     path.setPromptText(e.getMessage());
                     juurStart.requestFocus();
@@ -108,25 +109,25 @@ public class Analüsaator extends Application {
             }});
         // Kutsume välja meetodi histogrammi loomiseks
         histoNupp.setOnAction(event -> {
-            String fail = path.getText();
-            looHistogramm(peaLava, stseenStart, fail);
+            tulbad[0] = analüüsitavadTulbad.getText();
+            if (tulbad[0].contains(",")) {
+                analüüsitavadTulbad.setText("");
+                analüüsitavadTulbad.setPromptText("Ei saa teha mitme tulbaga.");
+            }
+            else {
+                if (päisega.isSelected())
+                    looHistogramm(peaLava, stseenStart, arvud[0], tulbad[0]);
+                else {
+                    String tulp = tulbad[0] + ". tulp";
+                    looHistogramm(peaLava, stseenStart, arvud[0], tulp);
+                }
+            }
         });
-
-
 
         // Juhul kui vajutatakse Enter klahvi, siis käivitatakse "Analüüsima!" nupp
         stseenStart.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 b1.fire();
-            }
-        });
-
-
-        näitajadNupp.setOnAction(new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                peaLava.setScene(stseenNäitajad);
-                näitajad.setText(selgitaKõik(väärtused));
-                vboxNäitajad.setLayoutX(350 - vboxNäitajad.getWidth() / 2);
             }
         });
 
@@ -151,6 +152,33 @@ public class Analüsaator extends Application {
             }
         });
 
+        kirjutaNäitajadFaili.setOnAction(event -> kirjutaFaili(väärtused,fail));
+
+        näitajadNupp.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                String tulp;
+                tulbad[0] = analüüsitavadTulbad.getText(); //millist tulpa soovib kasutaja analüüsida
+                if (tulbad[0].contains(",")) { //kas kasutaja on sisestanud mitu tulpa?
+                    analüüsitavadTulbad.setText("");
+                    analüüsitavadTulbad.setPromptText("Ei saa teha mitme tulbaga.");
+
+                } else if (tulbad[0].isEmpty()) { //kas kasutaja on välja tühjaks jätnud?
+                    analüüsitavadTulbad.setPromptText("Peab valima tulba");
+
+                } else {
+                    if (päisega.isSelected()) {
+                        tulp = tulbad[0];
+
+                    } else {
+                        tulp = tulbad[0] + ". tulp";
+                    }
+                    väärtused = teeMap(ujukomaMassiiviks(arvud[0].get(tulp)));
+                    peaLava.setScene(stseenNäitajad);
+                    näitajad.setText(selgitaKõik(väärtused));
+                    vboxNäitajad.setLayoutX(100);
+                }
+            }});
+
         //tekitame nupu, millega saab edasi tagasi liikuda
         Button tagasiStart = new Button("Tagasi");
         tagasiStart.setLayoutY(15);
@@ -168,7 +196,7 @@ public class Analüsaator extends Application {
 
         eraldajaKast.getChildren().addAll(eraldajaTekst, eraldaja);
         vboxStart.getChildren().addAll(title, kirjeldus, path,eraldajaKast, päisega, b1);
-        vboxMenüü.getChildren().addAll(näitajadNupp, histoNupp, scatNupp);
+        vboxMenüü.getChildren().addAll(analüüsitavadTulbad,näitajadNupp, histoNupp, scatNupp);
         vboxNäitajad.getChildren().addAll(näitajad, kirjutaNäitajadFaili);
 
         juurStart.getChildren().add(vboxStart);
@@ -188,30 +216,24 @@ public class Analüsaator extends Application {
     }
 
     // Meetod histogrammi loomiseks
-    private void looHistogramm(Stage peaLava, Scene praeguneStseen, String fail) {
+    private void looHistogramm(Stage peaLava, Scene praeguneStseen, HashMap<String, ArrayList<Double>> arvud,String tulbad) {
+
+        ArrayList<Double> andmed = arvud.get(tulbad);
+
         // Algab kümnendite loendurite initsialiseerimisega
-        int väikseimArv = Integer.MAX_VALUE;
-        int suurimArv = Integer.MIN_VALUE;
-        Map<Integer, Integer> LoenduridKaart = new TreeMap<>();
+        double väikseimArv = Double.MAX_VALUE;
+        double suurimArv = Double.MIN_VALUE;
+        Map<Double, Double> LoenduridKaart = new TreeMap<>();
 
-        // Loeb aastad failist ja loeb vahemikke
-        try (BufferedReader lugeja = new BufferedReader(new FileReader(fail))) {
-            String rida;
-            while ((rida = lugeja.readLine()) != null) {
-                // Võtab ridadelt arv
-                int arv = Integer.parseInt(rida.trim());
+        for (Double d: andmed) {
+            // Uuendab väikseimat ja suurimat aastat
+            väikseimArv = Math.min(väikseimArv, d);
+            suurimArv = Math.max(suurimArv, d);
 
-                // Uuendab väikseimat ja suurimat aastat
-                väikseimArv = Math.min(väikseimArv, arv);
-                suurimArv = Math.max(suurimArv, arv);
-
-                // Suurendab vastava vahemiku loenduri väärtust
-                LoenduridKaart.put(arv, LoenduridKaart.getOrDefault(arv, 0) + 1);
-            }
-        } catch (IOException | NumberFormatException e) {
-            e.printStackTrace();
-            return; // Väljub meetodist, kui tekib viga
+            // Suurendab vastava vahemiku loenduri väärtust
+            LoenduridKaart.put(d, LoenduridKaart.getOrDefault(d, 0.0) + 1);
         }
+
 
         // Küsib kasutajalt veergude arvu
         TextInputDialog dialoog = new TextInputDialog("10");
@@ -224,7 +246,7 @@ public class Analüsaator extends Application {
             int veergudeArv = Integer.parseInt(tulemus.get());
 
             // Arvutab iga veeru laiuse
-            int veeruLaius = (suurimArv - väikseimArv + 1) / veergudeArv;
+            double veeruLaius = (suurimArv - väikseimArv + 1) / veergudeArv;
 
             // Loob histogrammi diagrammi
             CategoryAxis xTelg = new CategoryAxis();
@@ -237,16 +259,16 @@ public class Analüsaator extends Application {
             XYChart.Series<String, Number> andmeSeeria = new XYChart.Series<>();
             for (int i = 0; i < veergudeArv; i++) {
                 // Määrab veeru algus- ja lõpu aasta
-                int algusArv = väikseimArv + i * veeruLaius;
-                int lõpuArv = algusArv + veeruLaius - 1;
+                double algusArv = väikseimArv + i * veeruLaius;
+                double  lõpuArv = algusArv + veeruLaius - 1;
 
                 // Määrab veeru märgise
-                String kümnendiMärgis = String.format("%ds-%ds", algusArv, lõpuArv);
+                String kümnendiMärgis = String.format("%d-%d", Math.round(algusArv), Math.round(lõpuArv));
 
                 // Arvutab veeru kogusagedus
                 int koguSagedus = 0;
-                for (int aasta = algusArv; aasta <= lõpuArv; aasta++) {
-                    koguSagedus += LoenduridKaart.getOrDefault((aasta / 10) * 10, 0);
+                for (double aasta = algusArv; aasta <= lõpuArv; aasta++) {
+                    koguSagedus += LoenduridKaart.getOrDefault((aasta / 10) * 10, 0.0);
                 }
 
                 // Lisab veeru seeriasse
