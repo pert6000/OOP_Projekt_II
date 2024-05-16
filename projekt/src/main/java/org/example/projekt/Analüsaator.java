@@ -19,7 +19,10 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.example.projekt.stat_näitajad.Main;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Analüsaator extends Application {
 
@@ -57,7 +60,8 @@ public class Analüsaator extends Application {
 
         // Kutsume välja meetodi histogrammi loomiseks
         histoNupp.setOnAction(event -> {
-            looHistogramm(peaLava, stseenStart);
+            String fail = path.getText();
+            looHistogramm(peaLava, stseenStart, fail);
         });
 
         // Nupuvajutuse handler stardimenüüs
@@ -67,7 +71,7 @@ public class Analüsaator extends Application {
             try {
                 // Kui vajutatakse "Analüüsima!" nuppu, siis kutsutakse esile meetod "looHistogramm"
                 arvud = Main.failistLugemine(fail);
-                looHistogramm(peaLava, stseenStart);
+                looHistogramm(peaLava, stseenStart, fail);
                 peaLava.setScene(stseenMenüü);
                 vboxMenüü.setLayoutX(250 - vboxMenüü.getWidth() / 2);
             } catch (FileNotFoundException e) {
@@ -118,36 +122,65 @@ public class Analüsaator extends Application {
     }
 
     // Meetod histogrammi loomiseks
-    private void looHistogramm(Stage peaLava, Scene praeguneStseen) {
-        // Loome andmed (näidisandmed)
-        double[] andmed = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+    private void looHistogramm(Stage peaLava, Scene praeguneStseen, String fail) {
+        // Initialize decade counters
+        int[] kümnendid = new int[11];
 
-        // Loome histogrammi diagrammi
+        // Read years from file and count decades
+        try (BufferedReader reader = new BufferedReader(new FileReader(fail))) {
+            String rida;
+            while ((rida = reader.readLine()) != null) {
+                // Extract the year from the line
+                int year = Integer.parseInt(rida.trim());
+
+                // Determine the decade
+                int decade = (year / 10) * 10;
+
+                // Increment the count for the corresponding decade
+                int kümnendiIndeks = (decade - 1900) / 10;
+                if (kümnendiIndeks >= 0 && kümnendiIndeks < kümnendid.length) {
+                    kümnendid[kümnendiIndeks]++;
+                } else {
+                    // Handle the case where the decade is outside the expected range
+                    // For example, you can ignore or log these cases
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            e.printStackTrace();
+            return; // Exit method if there's an error
+        }
+
+        // Create histogram chart
         CategoryAxis xAxis = new CategoryAxis();
         NumberAxis yAxis = new NumberAxis();
         BarChart<String, Number> histogramm = new BarChart<>(xAxis, yAxis);
-        xAxis.setLabel("Andmed");
-        yAxis.setLabel("Väärtused");
+        xAxis.setLabel("Kümnend");
+        yAxis.setLabel("Sagedus");
 
-        // Lisame andmed histogrammile
+        // Add data to the histogram chart
         XYChart.Series<String, Number> andmeSeeria = new XYChart.Series<>();
-        for (int i = 0; i < andmed.length; i++) {
-            andmeSeeria.getData().add(new XYChart.Data<>(String.valueOf(i + 1), andmed[i]));
+        for (int i = 0; i < kümnendid.length; i++) {
+            // Determine the decade label
+            String silt = String.format("%ds", 1900 + i * 10);
+
+            // Add the decade count to the series
+            andmeSeeria.getData().add(new XYChart.Data<>(silt, kümnendid[i]));
         }
         histogramm.getData().add(andmeSeeria);
 
-        // Salvestame praeguse stseeni
+        // Save the current scene
         Scene eelmineStseen = praeguneStseen;
 
-        // Lisame tagasinupu ja histogrammi uude stseeni
+        // Add a back button and the histogram to a new scene
         VBox vbox = new VBox();
         Button tagasiNupp = new Button("Tagasi");
         tagasiNupp.setOnAction(event -> peaLava.setScene(eelmineStseen));
         vbox.getChildren().addAll(histogramm, tagasiNupp);
 
-        // Näita uut stseeni
+        // Show the new scene
         peaLava.setScene(new Scene(vbox));
     }
+
 
     public static void main(String[] args) {
         launch();
