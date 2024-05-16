@@ -1,49 +1,64 @@
 package org.example.projekt.stat_näitajad;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
 
 public class Main {
 
-    public static double[] failistLugemine(String failitee) throws FileNotFoundException {
+    public static HashMap<String, ArrayList<Double>> failistLugemine(String failitee, boolean päistega, String eraldaja) throws IOException {
 
-        List<Double> arvud = new ArrayList<>(); // List kuhu arvud loetakse failist
-        double[] massiivina;
+        HashMap<String, ArrayList<Double>> andmed = new HashMap<>();
+        int tulpasid;
+        BufferedReader br;
+        String[] päis;
+        String rida;
+        String[] jupid;
 
+        File fail = new File(failitee);
         try {
-            File fail = new File(failitee);
-
-            Scanner failiScanner = new Scanner(fail);
-
-            // Loeb arvud failist ja lisab listi
-            while (failiScanner.hasNextLine()) {
-                String rida = failiScanner.nextLine();
-                try {
-                    double arv = Double.parseDouble(rida); // teeb rea double väärtuseks
-                    arvud.add(arv); // Lisab arvu listi
-                } catch (NumberFormatException e) {
-                    System.out.println("Ignoreerin rida " + rida);
-                }
-            }
-            failiScanner.close();
+            br = new BufferedReader(new InputStreamReader(new FileInputStream(fail)));
         } catch (FileNotFoundException e) {
-            throw new FileNotFoundException("Ei leia faili");
+            throw new IOException("Faili ei leitud");
         }
 
-        massiivina = new double[arvud.size()];
+        if (eraldaja.isEmpty())
+            eraldaja = "___";
 
-        for (int i = 0; i < arvud.size(); i++) {
-            massiivina[i] = arvud.get(i);
+        päis = br.readLine().split(eraldaja);
+        tulpasid = päis.length;
+
+
+        if (päistega) {
+
+            for (int i = 0; i < tulpasid; i++) {
+                andmed.put(päis[i], new ArrayList<>());
+            }
+        }else {
+            for (int i = 0; i < tulpasid; i++) {
+                String uusPäis = (i+1) + ". tulp";
+                andmed.put(uusPäis, new ArrayList<>());
+                andmed.get((i+1) + ". tulp").add(Double.parseDouble(päis[i]));
+                päis[i] = uusPäis;
+            }
         }
 
-        return massiivina;
+        rida = br.readLine();
+        while (rida != null) {
+            jupid = rida.split(eraldaja);
+
+            for (int i = 0; i < tulpasid; i++) {
+                andmed.get(päis[i]).add(Double.parseDouble(päis[i]));
+            }
+        }
+
+        br.close();
+
+        return andmed;
     }
 
-    public static void kirjutaFaili(HashMap<String, statistilineNäitaja> väärtused, String path) {
+
+        public static void kirjutaFaili(HashMap<String, statistilineNäitaja> väärtused, String path) {
         try {
             File fail = new File(path);
             String kogu_tee = Paths.get(fail.getAbsolutePath()).getParent().toString() +
@@ -64,75 +79,37 @@ public class Main {
         }
     }
 
+    public static String selgitaKõik(HashMap<String, statistilineNäitaja> väärtused) {
+        String tulem = "";
 
-    public static void main(String[] args) throws FileNotFoundException {
-
-        // tekst, mis kuvatakse ekraanile programmi käivitamisel
-        System.out.println("//////");
-        System.out.println("Tegu on programmiga, mille abil saab teostada andmete statistilist analüüsi.");
-        System.out.println("Andmefailile viitamise järel saab pärida erinevaid näitajaid andmestiku kohta või teostada terviklik analüüs.");
-        System.out.println("Viimast valides tekib uus tekstifail andmefailiga samasse kausta, mis sisaldab arvutatud näitajaid.");
-        System.out.println("//////\n");
-
-
-        System.out.println("Sisesta failitee: ");
-
-        java.util.Scanner scanner = new java.util.Scanner(System.in);
-        String failitee = scanner.nextLine();
-
-        double[] arvudeMassiiv = failistLugemine(failitee);
-
-        String tekst = "Võimalikud tegevused on:\nTeosta kogu analüüs - all\nMaksimum - max \nMiinimum - min\n" +
-                "Vahemik - rng\nKeskmine - avg \nSumma - sum \nKogus - len \nEkstsess (näitab andmete püstakust) - kurt \n" +
-                "Mediaan - med \nAsümmeetrijakordaja - asüm \nStandardviga - se\nMood - md\n" +
-                "Hälve (dispersioon) - h\nStandardhälve (kui hajunud andmed on keskmise ümber)- sd\n\nLõpeta töö - jäta tühjaks\n";
-
-        System.out.println(tekst);
-
-        // Arvutame failist saadud arvudega
-        if (!(arvudeMassiiv == null)) {
-
-            HashMap<String, statistilineNäitaja> väärtused = new HashMap<String, statistilineNäitaja>();
-
-            väärtused.put("max", new max(arvudeMassiiv));
-            väärtused.put("min", new min(arvudeMassiiv));
-            väärtused.put("rng", new vahemik(arvudeMassiiv));
-            väärtused.put("avg", new keskmine(arvudeMassiiv));
-            väärtused.put("sum", new summa(arvudeMassiiv));
-            väärtused.put("len", new kogus(arvudeMassiiv));
-            väärtused.put("kurt", new kurtosis(arvudeMassiiv));
-            väärtused.put("med", new mediaan(arvudeMassiiv));
-            väärtused.put("asüm", new asümmeetrijakordaja(arvudeMassiiv));
-            väärtused.put("se", new standardviga(arvudeMassiiv));
-            väärtused.put("md", new mood(arvudeMassiiv));
-            väärtused.put("h", new hälve(arvudeMassiiv));
-            väärtused.put("sd", new standardhälve(arvudeMassiiv));
-
-
-
-            while (true) {
-
-                System.out.println("Sisesta soovitud arvutus: ");
-                java.util.Scanner sc = new java.util.Scanner(System.in);
-                String sisend = "";
-
-                if (sc.hasNextLine()) {
-                    sisend = sc.nextLine();
-                }
-
-                if(sisend.isEmpty()) {
-                    System.out.println("Programm lõpetas töö");
-                    break;
-                }
-                if (sisend.equals("all")) {
-                    kirjutaFaili(väärtused, failitee);
-                }else
-                    System.out.println(väärtused.get(sisend).selgita());
-
-            }
-
-        } else {
-            System.out.println("Failist ei leitud sobivaid arve arvutamiseks.");
+        for (Map.Entry<String, statistilineNäitaja> el: väärtused.entrySet()) {
+            tulem += el.getValue().selgita() + System.lineSeparator();
         }
+        return tulem;
+
+    }
+
+    public static HashMap<String, statistilineNäitaja> teeMap(double[] arvudeMassiiv) {
+        HashMap<String, statistilineNäitaja> väärtused = new HashMap<String, statistilineNäitaja>();
+
+        väärtused.put("max", new max(arvudeMassiiv));
+        väärtused.put("min", new min(arvudeMassiiv));
+        väärtused.put("rng", new vahemik(arvudeMassiiv));
+        väärtused.put("avg", new keskmine(arvudeMassiiv));
+        väärtused.put("sum", new summa(arvudeMassiiv));
+        väärtused.put("len", new kogus(arvudeMassiiv));
+        väärtused.put("kurt", new kurtosis(arvudeMassiiv));
+        väärtused.put("med", new mediaan(arvudeMassiiv));
+        väärtused.put("asüm", new asümmeetrijakordaja(arvudeMassiiv));
+        väärtused.put("se", new standardviga(arvudeMassiiv));
+        väärtused.put("md", new mood(arvudeMassiiv));
+        väärtused.put("h", new hälve(arvudeMassiiv));
+        väärtused.put("sd", new standardhälve(arvudeMassiiv));
+
+        return väärtused;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString("12345".split("")));
     }
 }
